@@ -28,7 +28,7 @@ Recommended for:
 ## Files in this repository
 
 - `lesson-plan/` — lesson documents and teacher-facing materials
-- `example-project/` — completed version for teacher reference
+- `project-example/` — completed version for teacher reference
 - `screenshots/` — visual examples of the project
 
 
