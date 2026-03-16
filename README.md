@@ -28,10 +28,9 @@ Recommended for:
 ## Files in this repository
 
 - `lesson-plan/` — lesson documents and teacher-facing materials
-- `starter-project/` — files students begin with
-- `solution-project/` — completed version for teacher reference
+- `example-project/` — completed version for teacher reference
 - `screenshots/` — visual examples of the project
-- `resources/` — optional supporting materials
+
 
 ## For teachers
 
