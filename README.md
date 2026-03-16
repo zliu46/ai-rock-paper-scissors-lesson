@@ -36,9 +36,8 @@ Recommended for:
 
 Start here:
 1. Read the lesson plan in `lesson-plan/`
-2. Review the finished project in `solution-project/`
-3. Use the starter files in `starter-project/`
-4. Check `teacher-guide.md` for setup notes and common student issues
+2. Review the finished project in `project-example/`
+3. Check `teacher-guide.md` for setup notes and common student issues
 
 ## Suggested teaching goals
 
