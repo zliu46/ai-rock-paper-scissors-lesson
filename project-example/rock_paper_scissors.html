@@ -1,0 +1,711 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Rock Paper Scissors - Teachable Machine</title>
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest/dist/tf.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@latest/dist/teachablemachine-image.min.js"></script>
+  <style>
+    :root {
+      --bg: #0f172a;
+      --panel: #111827;
+      --panel-2: #1f2937;
+      --text: #e5e7eb;
+      --muted: #94a3b8;
+      --accent: #22c55e;
+      --accent-2: #60a5fa;
+      --danger: #ef4444;
+      --warning: #f59e0b;
+      --border: rgba(255,255,255,0.08);
+      --shadow: 0 12px 30px rgba(0,0,0,0.28);
+      --radius: 18px;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: Arial, Helvetica, sans-serif;
+      background: linear-gradient(180deg, #020617, #0f172a 45%, #111827);
+      color: var(--text);
+      min-height: 100vh;
+    }
+
+    .app {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 28px 18px 40px;
+    }
+
+    h1 {
+      margin: 0 0 8px;
+      font-size: clamp(1.8rem, 3vw, 2.6rem);
+    }
+
+    .subtitle {
+      color: var(--muted);
+      line-height: 1.55;
+      margin: 0 0 22px;
+      max-width: 850px;
+    }
+
+    .card {
+      background: rgba(17, 24, 39, 0.84);
+      border: 1px solid var(--border);
+      box-shadow: var(--shadow);
+      border-radius: var(--radius);
+      padding: 18px;
+      backdrop-filter: blur(10px);
+    }
+
+    .controls {
+      display: grid;
+      grid-template-columns: 1fr auto auto auto;
+      gap: 10px;
+      align-items: center;
+      margin-bottom: 18px;
+    }
+
+    input[type="text"] {
+      width: 100%;
+      padding: 14px 14px;
+      border-radius: 14px;
+      border: 1px solid rgba(255,255,255,0.12);
+      background: #0b1220;
+      color: var(--text);
+      font-size: 0.98rem;
+      outline: none;
+    }
+
+    input[type="text"]:focus {
+      border-color: rgba(96,165,250,0.7);
+      box-shadow: 0 0 0 4px rgba(96,165,250,0.12);
+    }
+
+    button {
+      border: none;
+      border-radius: 14px;
+      padding: 14px 16px;
+      color: white;
+      font-weight: 700;
+      cursor: pointer;
+      transition: transform 0.16s ease, opacity 0.16s ease, filter 0.16s ease;
+    }
+
+    button:hover:not(:disabled) {
+      transform: translateY(-1px);
+      filter: brightness(1.06);
+    }
+
+    button:disabled {
+      opacity: 0.55;
+      cursor: not-allowed;
+    }
+
+    #loadBtn { background: var(--accent-2); }
+    #captureBtn { background: var(--accent); }
+    #restartBtn { background: #8b5cf6; }
+    #stopBtn { background: #475569; }
+
+    .status {
+      margin: 10px 0 18px;
+      padding: 14px 16px;
+      border-radius: 14px;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.07);
+      line-height: 1.5;
+    }
+
+    .game-grid {
+      display: grid;
+      grid-template-columns: 1.15fr 0.85fr;
+      gap: 18px;
+    }
+
+    .left-panel,
+    .right-panel {
+      display: grid;
+      gap: 18px;
+    }
+
+    .webcam-shell {
+      width: 100%;
+      min-height: 320px;
+      display: grid;
+      place-items: center;
+      border-radius: 16px;
+      overflow: hidden;
+      background: #030712;
+      border: 1px solid rgba(255,255,255,0.06);
+    }
+
+    #webcam-container canvas {
+      display: block;
+      width: 100%;
+      max-width: 480px;
+      height: auto;
+      border-radius: 12px;
+    }
+
+    .meta-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 14px;
+      margin-top: 14px;
+    }
+
+    .mini-stat {
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.06);
+      border-radius: 16px;
+      padding: 14px;
+    }
+
+    .mini-stat .label {
+      color: var(--muted);
+      font-size: 0.9rem;
+      margin-bottom: 8px;
+    }
+
+    .mini-stat .value {
+      font-size: 1.2rem;
+      font-weight: 700;
+    }
+
+    .scoreboard {
+      display: grid;
+      grid-template-columns: 1fr 80px 1fr;
+      gap: 12px;
+      align-items: center;
+      text-align: center;
+    }
+
+    .score-box {
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.06);
+      border-radius: 18px;
+      padding: 16px;
+    }
+
+    .score-title {
+      color: var(--muted);
+      margin-bottom: 6px;
+    }
+
+    .score-number {
+      font-size: clamp(2rem, 5vw, 3rem);
+      font-weight: 800;
+    }
+
+    .versus {
+      font-size: 1.2rem;
+      color: var(--muted);
+      font-weight: 700;
+    }
+
+    .move-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+      margin-top: 16px;
+    }
+
+    .move-box {
+      padding: 14px;
+      border-radius: 16px;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.06);
+      min-height: 88px;
+    }
+
+    .move-box .label {
+      color: var(--muted);
+      margin-bottom: 8px;
+      font-size: 0.92rem;
+    }
+
+    .move-box .value {
+      font-size: 1.35rem;
+      font-weight: 800;
+    }
+
+    .predictions {
+      display: grid;
+      gap: 10px;
+      margin-top: 14px;
+    }
+
+    .prediction-item {
+      display: grid;
+      grid-template-columns: 110px 1fr 68px;
+      gap: 10px;
+      align-items: center;
+      font-size: 0.95rem;
+    }
+
+    .bar {
+      width: 100%;
+      height: 12px;
+      border-radius: 999px;
+      overflow: hidden;
+      background: rgba(255,255,255,0.08);
+    }
+
+    .bar-fill {
+      height: 100%;
+      width: 0%;
+      border-radius: 999px;
+      background: linear-gradient(90deg, #22c55e, #60a5fa);
+      transition: width 0.12s linear;
+    }
+
+    .hint {
+      color: var(--muted);
+      font-size: 0.95rem;
+      margin-top: 10px;
+      line-height: 1.55;
+    }
+
+    .winner {
+      color: #fde68a;
+      font-weight: 800;
+    }
+
+    .danger { color: #fca5a5; }
+    .good { color: #86efac; }
+    .warn { color: #fcd34d; }
+
+    @media (max-width: 900px) {
+      .controls {
+        grid-template-columns: 1fr;
+      }
+
+      .game-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .prediction-item {
+        grid-template-columns: 92px 1fr 58px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <h1>Rock • Paper • Scissors</h1>
+    <p class="subtitle">
+      Paste your Teachable Machine image model link, start the webcam, then click <strong>Play Round</strong> to let the model detect your hand gesture.
+      The first side to reach <strong>3 wins</strong> wins the match. Your model classes should be named <strong>Rock</strong>, <strong>Paper</strong>, and <strong>Scissors</strong>.
+    </p>
+
+    <div class="card">
+      <div class="controls">
+        <input
+          id="modelUrlInput"
+          type="text"
+          placeholder="Paste Teachable Machine model URL or model.json link"
+          value=""
+        />
+        <button id="loadBtn">Load Model & Start</button>
+        <button id="captureBtn" disabled>Play Round</button>
+        <button id="restartBtn" disabled>Restart Match</button>
+      </div>
+
+      <div id="status" class="status">
+        Enter your Teachable Machine model link, then click <strong>Load Model & Start</strong>.
+      </div>
+
+      <div class="game-grid">
+        <div class="left-panel">
+          <div class="card">
+            <h2 style="margin-top:0">Webcam</h2>
+            <div class="webcam-shell">
+              <div id="webcam-container" aria-live="polite"></div>
+            </div>
+
+            <div class="meta-grid">
+              <div class="mini-stat">
+                <div class="label">Live top prediction</div>
+                <div id="detectedMove" class="value">—</div>
+              </div>
+              <div class="mini-stat">
+                <div class="label">Confidence</div>
+                <div id="detectedConfidence" class="value">—</div>
+              </div>
+            </div>
+
+            <div class="predictions" id="predictionList"></div>
+            <div class="hint">
+              Tip: use a well-trained model and hold your hand clearly in frame before pressing <strong>Play Round</strong>.
+            </div>
+          </div>
+        </div>
+
+        <div class="right-panel">
+          <div class="card">
+            <h2 style="margin-top:0">Score</h2>
+            <div class="scoreboard">
+              <div class="score-box">
+                <div class="score-title">Player</div>
+                <div id="playerScore" class="score-number">0</div>
+              </div>
+              <div class="versus">VS</div>
+              <div class="score-box">
+                <div class="score-title">Computer</div>
+                <div id="computerScore" class="score-number">0</div>
+              </div>
+            </div>
+
+            <div class="move-row">
+              <div class="move-box">
+                <div class="label">Your last move</div>
+                <div id="playerMove" class="value">—</div>
+              </div>
+              <div class="move-box">
+                <div class="label">Computer move</div>
+                <div id="computerMove" class="value">—</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <h2 style="margin-top:0">Round Result</h2>
+            <div id="roundResult" style="font-size:1.1rem; line-height:1.6;">No rounds played yet.</div>
+          </div>
+
+          <div class="card">
+            <h2 style="margin-top:0">How to use</h2>
+            <ol style="margin:0; padding-left:20px; line-height:1.7; color: var(--text);">
+              <li>Train a Teachable Machine <strong>image</strong> model with classes named Rock, Paper, and Scissors.</li>
+              <li>Export it as a <strong>TensorFlow.js</strong> model and copy its share URL.</li>
+              <li>Paste the URL above and click <strong>Load Model & Start</strong>.</li>
+              <li>Show a gesture to the webcam and click <strong>Play Round</strong>.</li>
+              <li>The match ends when either side reaches 3 wins.</li>
+            </ol>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const WIN_SCORE = 3;
+    const CONFIDENCE_THRESHOLD = 0.75;
+    const VALID_MOVES = ["rock", "paper", "scissors"];
+
+    let model = null;
+    let webcam = null;
+    let maxPredictions = 0;
+    let animationFrameId = null;
+    let lastPrediction = null;
+    let gameOver = false;
+    let scores = { player: 0, computer: 0 };
+
+    const modelUrlInput = document.getElementById("modelUrlInput");
+    const loadBtn = document.getElementById("loadBtn");
+    const captureBtn = document.getElementById("captureBtn");
+    const restartBtn = document.getElementById("restartBtn");
+
+    const statusEl = document.getElementById("status");
+    const predictionList = document.getElementById("predictionList");
+    const webcamContainer = document.getElementById("webcam-container");
+    const detectedMoveEl = document.getElementById("detectedMove");
+    const detectedConfidenceEl = document.getElementById("detectedConfidence");
+    const playerScoreEl = document.getElementById("playerScore");
+    const computerScoreEl = document.getElementById("computerScore");
+    const playerMoveEl = document.getElementById("playerMove");
+    const computerMoveEl = document.getElementById("computerMove");
+    const roundResultEl = document.getElementById("roundResult");
+
+    loadBtn.addEventListener("click", initGame);
+    captureBtn.addEventListener("click", playRound);
+    restartBtn.addEventListener("click", restartMatch);
+
+    function setStatus(message, type = "default") {
+      const typeClass = type === "error"
+        ? "danger"
+        : type === "success"
+          ? "good"
+          : type === "warning"
+            ? "warn"
+            : "";
+      statusEl.innerHTML = `<span class="${typeClass}">${message}</span>`;
+    }
+
+    function formatPercent(value) {
+      return `${(value * 100).toFixed(1)}%`;
+    }
+
+    function capitalize(word) {
+      if (!word) return "—";
+      return word.charAt(0).toUpperCase() + word.slice(1);
+    }
+
+    function normalizeMove(name) {
+      const value = String(name || "").trim().toLowerCase();
+      if (value === "rock") return "rock";
+      if (value === "paper") return "paper";
+      if (value === "scissors" || value === "scissor") return "scissors";
+      return null;
+    }
+
+    function parseModelUrls(input) {
+      let url = String(input || "").trim();
+      if (!url) {
+        throw new Error("Please paste a Teachable Machine model URL first.");
+      }
+
+      if (url.endsWith("metadata.json")) {
+        return {
+          modelURL: url.replace(/metadata\.json$/i, "model.json"),
+          metadataURL: url,
+        };
+      }
+
+      if (url.endsWith("model.json")) {
+        return {
+          modelURL: url,
+          metadataURL: url.replace(/model\.json$/i, "metadata.json"),
+        };
+      }
+
+      if (!url.endsWith("/")) {
+        url += "/";
+      }
+
+      return {
+        modelURL: `${url}model.json`,
+        metadataURL: `${url}metadata.json`,
+      };
+    }
+
+    function randomMove() {
+      return VALID_MOVES[Math.floor(Math.random() * VALID_MOVES.length)];
+    }
+
+    function getWinner(playerMove, computerMove) {
+      if (playerMove === computerMove) return "tie";
+
+      const playerWins =
+        (playerMove === "rock" && computerMove === "scissors") ||
+        (playerMove === "paper" && computerMove === "rock") ||
+        (playerMove === "scissors" && computerMove === "paper");
+
+      return playerWins ? "player" : "computer";
+    }
+
+    function updateScoreboard() {
+      playerScoreEl.textContent = scores.player;
+      computerScoreEl.textContent = scores.computer;
+    }
+
+    function resetRoundDisplay() {
+      playerMoveEl.textContent = "—";
+      computerMoveEl.textContent = "—";
+      roundResultEl.textContent = "No rounds played yet.";
+    }
+
+    function resetMatchState() {
+      scores = { player: 0, computer: 0 };
+      gameOver = false;
+      updateScoreboard();
+      resetRoundDisplay();
+      captureBtn.disabled = !model || !webcam;
+      restartBtn.disabled = !model;
+    }
+
+    async function stopCurrentLoop() {
+      if (animationFrameId !== null) {
+        cancelAnimationFrame(animationFrameId);
+        animationFrameId = null;
+      }
+
+      if (webcam && typeof webcam.stop === "function") {
+        try {
+          webcam.stop();
+        } catch (error) {
+          console.warn("Webcam stop warning:", error);
+        }
+      }
+
+      webcam = null;
+      webcamContainer.innerHTML = "";
+      predictionList.innerHTML = "";
+      detectedMoveEl.textContent = "—";
+      detectedConfidenceEl.textContent = "—";
+      lastPrediction = null;
+    }
+
+    async function initGame() {
+      loadBtn.disabled = true;
+      captureBtn.disabled = true;
+      restartBtn.disabled = true;
+      setStatus("Loading model and connecting to the webcam...", "warning");
+
+      try {
+        await stopCurrentLoop();
+
+        const { modelURL, metadataURL } = parseModelUrls(modelUrlInput.value);
+        model = await tmImage.load(modelURL, metadataURL);
+        maxPredictions = model.getTotalClasses();
+
+        const classLabels = typeof model.getClassLabels === "function"
+          ? model.getClassLabels().map(normalizeMove).filter(Boolean)
+          : [];
+
+        const missing = VALID_MOVES.filter((move) => !classLabels.includes(move));
+        if (classLabels.length && missing.length > 0) {
+          throw new Error(`Your model must include Rock, Paper, and Scissors classes. Missing: ${missing.map(capitalize).join(", ")}`);
+        }
+
+        webcam = new tmImage.Webcam(480, 360, true);
+        await webcam.setup();
+        await webcam.play();
+
+        webcamContainer.innerHTML = "";
+        webcamContainer.appendChild(webcam.canvas);
+
+        resetMatchState();
+        setStatus(`Model loaded. Show a hand gesture and click <strong>Play Round</strong>. First to ${WIN_SCORE} wins.`, "success");
+
+        animationFrameId = window.requestAnimationFrame(loop);
+      } catch (error) {
+        console.error(error);
+        model = null;
+        setStatus(error.message || "Could not start the model or webcam. Make sure the model link is valid and camera permission is allowed.", "error");
+      } finally {
+        loadBtn.disabled = false;
+        captureBtn.disabled = !model || !webcam;
+        restartBtn.disabled = !model;
+      }
+    }
+
+    async function loop() {
+      if (!webcam || !model) return;
+
+      webcam.update();
+      await predictLive();
+      animationFrameId = window.requestAnimationFrame(loop);
+    }
+
+    async function predictLive() {
+      if (!model || !webcam) return;
+
+      const predictions = await model.predict(webcam.canvas);
+      predictions.sort((a, b) => b.probability - a.probability);
+
+      renderPredictionList(predictions);
+
+      const top = predictions[0];
+      const move = normalizeMove(top.className);
+
+      if (move) {
+        lastPrediction = {
+          move,
+          probability: top.probability,
+          predictions,
+        };
+        detectedMoveEl.textContent = capitalize(move);
+        detectedConfidenceEl.textContent = formatPercent(top.probability);
+      } else {
+        lastPrediction = null;
+        detectedMoveEl.textContent = "Unknown class";
+        detectedConfidenceEl.textContent = top ? formatPercent(top.probability) : "—";
+      }
+    }
+
+    function renderPredictionList(predictions) {
+      predictionList.innerHTML = "";
+
+      predictions.forEach((item) => {
+        const row = document.createElement("div");
+        row.className = "prediction-item";
+
+        const label = document.createElement("div");
+        label.textContent = item.className;
+
+        const bar = document.createElement("div");
+        bar.className = "bar";
+
+        const barFill = document.createElement("div");
+        barFill.className = "bar-fill";
+        barFill.style.width = `${Math.max(0, Math.min(100, item.probability * 100))}%`;
+        bar.appendChild(barFill);
+
+        const percent = document.createElement("div");
+        percent.textContent = formatPercent(item.probability);
+
+        row.appendChild(label);
+        row.appendChild(bar);
+        row.appendChild(percent);
+        predictionList.appendChild(row);
+      });
+    }
+
+    function playRound() {
+      if (!model || !webcam) {
+        setStatus("Load the model and webcam first.", "error");
+        return;
+      }
+
+      if (gameOver) {
+        setStatus("The match is over. Click <strong>Restart Match</strong> to play again.", "warning");
+        return;
+      }
+
+      if (!lastPrediction || !lastPrediction.move) {
+        setStatus("No valid gesture detected yet. Show Rock, Paper, or Scissors clearly to the webcam.", "warning");
+        return;
+      }
+
+      if (lastPrediction.probability < CONFIDENCE_THRESHOLD) {
+        setStatus(`Prediction confidence is only ${formatPercent(lastPrediction.probability)}. Hold the gesture more clearly and try again.`, "warning");
+        return;
+      }
+
+      const playerMove = lastPrediction.move;
+      const computerMove = randomMove();
+      const winner = getWinner(playerMove, computerMove);
+
+      playerMoveEl.textContent = capitalize(playerMove);
+      computerMoveEl.textContent = capitalize(computerMove);
+
+      if (winner === "player") {
+        scores.player += 1;
+        roundResultEl.innerHTML = `<span class="winner">You win this round.</span> ${capitalize(playerMove)} beats ${capitalize(computerMove)}.`;
+      } else if (winner === "computer") {
+        scores.computer += 1;
+        roundResultEl.innerHTML = `<span class="danger"><strong>Computer wins this round.</strong></span> ${capitalize(computerMove)} beats ${capitalize(playerMove)}.`;
+      } else {
+        roundResultEl.innerHTML = `<strong>It's a tie.</strong> You both chose ${capitalize(playerMove)}.`;
+      }
+
+      updateScoreboard();
+
+      if (scores.player >= WIN_SCORE || scores.computer >= WIN_SCORE) {
+        gameOver = true;
+        captureBtn.disabled = true;
+
+        if (scores.player > scores.computer) {
+          setStatus(`<strong>You won the match ${scores.player}–${scores.computer}!</strong> Click <strong>Restart Match</strong> to play again.`, "success");
+        } else {
+          setStatus(`<strong>The computer won the match ${scores.computer}–${scores.player}.</strong> Click <strong>Restart Match</strong> to try again.`, "error");
+        }
+      } else {
+        setStatus(`Round complete. Current score: Player ${scores.player} - ${scores.computer} Computer.`, "success");
+      }
+    }
+
+    function restartMatch() {
+      if (!model) {
+        setStatus("Load the model first.", "warning");
+        return;
+      }
+
+      resetMatchState();
+      setStatus(`Match reset. Show a gesture and click <strong>Play Round</strong>. First to ${WIN_SCORE} wins.`, "success");
+    }
+  </script>
+</body>
+</html>
