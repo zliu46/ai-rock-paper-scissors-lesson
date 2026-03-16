@@ -23,7 +23,7 @@ Recommended for:
 
 ## Time
 
-Approximately 45–60 minutes, depending on student experience.
+50–60 minutes, depending on student experience.
 
 ## Files in this repository
 
