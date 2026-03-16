@@ -211,9 +211,8 @@ Have students compare their models with classmates and discuss:
 ## Related Files in This Repository
 - `lesson-plan/` — lesson documents
 - `screenshots/` — visual setup guide
-- `starter-project/` — student starting files
-- `solution-project/` — teacher reference solution
-- `resources/` — prompts and reflection materials
+- `project-example/` — project example files
+
 
 ## Final Teacher Tip
 Keep the pace focused on understanding and testing, not just finishing. Students learn the most when they notice why a model succeeds, why it fails, and how better examples improve the result.
