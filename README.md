@@ -17,7 +17,7 @@ Students will create a simple Rock Paper Scissors game with basic gameplay logic
 ## Audience
 
 Recommended for:
-- middle school or high school students
+- middle school school students
 - beginner to early-intermediate coders
 - classrooms introducing AI-assisted programming
 
